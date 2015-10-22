@@ -6,6 +6,22 @@ var router = require('express').Router(),
 var HttpError = require('../../utils/HttpError');
 var User = require('./user.model');
 
+function isUserAdmin (id) {
+	return User.findById(id)
+	.then(function (user) {
+		if (user.isAdmin) return true;
+		else return false;
+	})
+	.then(null, function (err) {
+		return false;
+	})
+}
+
+function isUserSelf (sessionId, paramId) {
+	return sessionId === paramId;
+}
+
+
 router.param('id', function (req, res, next, id) {
 	User.findById(id).exec()
 	.then(function (user) {
@@ -25,11 +41,25 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-	User.create(req.body)
-	.then(function (user) {
-		res.status(201).json(user);
+	if (!req.session.passport) {
+		res.status(403).end('Go away!')
+		return;
+	}
+	isUserAdmin(req.session.passport.user)
+	.then(function (bool) {
+		if (!bool) {
+			res.status(403).end('Go away!');
+			return;
+		}
+		return true;
 	})
-	.then(null, next);
+	.then(function () {
+		User.create(req.body)
+		.then(function (user) {
+			res.status(201).json(user);
+		})
+		.then(null, next);
+	})
 });
 
 router.get('/:id', function (req, res, next) {
@@ -43,20 +73,48 @@ router.get('/:id', function (req, res, next) {
 });
 
 router.put('/:id', function (req, res, next) {
-	_.extend(req.requestedUser, req.body);
-	req.requestedUser.save()
-	.then(function (user) {
-		res.json(user);
+	if (!req.session.passport) {
+		res.status(403).end('Go away!')
+		return;
+	}
+	var userIsSelf = isUserSelf(req.session.passport.user, req.params.id);
+
+	isUserAdmin(req.session.passport.user)	
+	.then(function (bool) {
+		if (!bool && !userIsSelf) {
+			res.status(403).end();
+			return;
+		} else {
+			_.extend(req.requestedUser, req.body);
+			req.requestedUser.save()
+			.then(function (user) {
+				res.json(user);
+			})
+			.then(null, next);		
+		}
 	})
-	.then(null, next);
 });
 
 router.delete('/:id', function (req, res, next) {
-	req.requestedUser.remove()
-	.then(function () {
-		res.status(204).end();
+	if (!req.session.passport) {
+		res.status(403).end('Go away!')
+		return;
+	}
+	var userIsSelf = isUserSelf(req.session.passport.user, req.params.id);
+
+	isUserAdmin(req.session.passport.user)	
+	.then(function (bool) {
+		if (!bool && !userIsSelf) {
+			res.status(403).end('Go away!');
+			return;
+		} else {
+			req.requestedUser.remove()
+			.then(function () {
+				res.status(204).end('Go away!');
+			})
+			.then(null, next);
+		}
 	})
-	.then(null, next);
 });
 
 module.exports = router;
