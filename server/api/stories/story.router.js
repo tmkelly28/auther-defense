@@ -34,7 +34,7 @@ router.post('/', function (req, res, next) {
 		return;
 	}
 
-	Story.create({author: req.body.author + "", title: req.body.title + "", paragraphs: req.body.paragraphs.map(function (p) { return p + ""})})
+	Story.create({author: req.body.author + "", title: req.body.title + "", paragraphs: req.body.paragraphs})
 	.then(function (story) {
 		return story.populateAsync('author');
 	})

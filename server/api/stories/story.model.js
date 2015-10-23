@@ -25,7 +25,7 @@ var Story = new mongoose.Schema({
 		required: true,
 		unique: true
 	},
-	paragraphs: [String]
+	paragraphs: {type: [String], default: ''}
 });
 
 module.exports = db.model('Story', Story);
