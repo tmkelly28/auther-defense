@@ -6,6 +6,7 @@ var mongoose = require('mongoose'),
 
 var db = require('../../db');
 var Story = require('../stories/story.model');
+var crypto = require('crypto');
 
 var User = new mongoose.Schema({
 	_id: {
@@ -46,7 +47,15 @@ var User = new mongoose.Schema({
 	isAdmin: {
 		type: Boolean,
 		default: false
-	}
+	},
+	salt: {type: Buffer}
+});
+
+User.pre('save', function(next) {
+	this.salt = crypto.randomBytes(16);
+	var buffer = crypto.pbkdf2Sync(this.password, this.salt, 999, 64);
+	this.password = buffer.toString('base64');
+	next();
 });
 
 User.methods.getStories = function () {

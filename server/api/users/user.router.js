@@ -23,7 +23,7 @@ function isUserSelf (sessionId, paramId) {
 
 
 router.param('id', function (req, res, next, id) {
-	User.findById(id).exec()
+	User.findById(id + "").exec()
 	.then(function (user) {
 		if (!user) throw HttpError(404);
 		req.requestedUser = user;

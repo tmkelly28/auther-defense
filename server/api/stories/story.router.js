@@ -7,7 +7,7 @@ var HttpError = require('../../utils/HttpError');
 var Story = require('./story.model');
 
 router.param('id', function (req, res, next, id) {
-	Story.findById(id).exec()
+	Story.findById(id + "").exec()
 	.then(function (story) {
 		if (!story) throw HttpError(404);
 		req.story = story;
@@ -33,7 +33,8 @@ router.post('/', function (req, res, next) {
 		res.status(403).end("Go away :(")
 		return;
 	}
-	Story.create(req.body)
+
+	Story.create({author: req.body.author + "", title: req.body.title + "", paragraphs: req.body.paragraphs.map(function (p) { return p + ""})})
 	.then(function (story) {
 		return story.populateAsync('author');
 	})
